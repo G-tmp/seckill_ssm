@@ -2,6 +2,9 @@ package org.xd.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 import org.xd.dao.SeckillDao;
 import org.xd.dao.SuccessKilledDao;
@@ -19,6 +22,8 @@ import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
 
+// @Component @Service @dao @Controller
+@Service
 public class SeckillServiceImpl implements SeckillService {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -66,6 +71,7 @@ public class SeckillServiceImpl implements SeckillService {
     }
 
     @Override
+    @Transactional
     public SeckillExecution executeSeckill(Long seckillId, Long phone, String md5) throws SeckillException, SeckillRepeatException, SeckillCloseException {
         if (md5 == null || !md5.equals(generateMD5(seckillId))){
             throw new SeckillException("seckill data rewrite");

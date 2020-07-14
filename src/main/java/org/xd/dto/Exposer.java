@@ -2,7 +2,7 @@ package org.xd.dto;
 
 
 /**
- *  暴露接口地址
+ *  暴露接口地址对象
  */
 public class Exposer {
     // 是否开启
@@ -38,6 +38,17 @@ public class Exposer {
         this.seckillId = seckillId;
     }
 
+    @Override
+    public String toString() {
+        return "Exposer{" +
+                "exposed=" + exposed +
+                ", md5='" + md5 + '\'' +
+                ", seckillId=" + seckillId +
+                ", now=" + now +
+                ", start=" + start +
+                ", end=" + end +
+                '}';
+    }
 
     public boolean isExposed() {
         return exposed;
@@ -86,4 +97,6 @@ public class Exposer {
     public void setEnd(Long end) {
         this.end = end;
     }
+
+
 }
