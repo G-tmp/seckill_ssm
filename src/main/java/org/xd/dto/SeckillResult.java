@@ -2,6 +2,7 @@ package org.xd.dto;
 
 
 /**
+ *  json 传输对象
  *  所有 ajax 请求返回类型，封装 json 结果
  */
 public class SeckillResult<T> {

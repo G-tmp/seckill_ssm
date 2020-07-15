@@ -3,7 +3,6 @@ package org.xd.web;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +16,6 @@ import org.xd.exception.SeckillRepeatException;
 import org.xd.service.SeckillService;
 
 import javax.annotation.Resource;
-import java.lang.reflect.Executable;
 import java.util.Date;
 import java.util.List;
 
@@ -30,6 +28,15 @@ public class SeckillController {
 
     @Resource
     private SeckillService seckillService;
+
+
+
+    @ResponseBody
+    @RequestMapping(value = "/",method = RequestMethod.GET)
+    public String hello(){
+        logger.info("CNMCNMCNMCNMCNMCNMCNMCNMCNMCNMCNMCNMCNMCNMCNM");
+        return "wocaonima";
+    }
 
 
     @RequestMapping(value = "/list",method = RequestMethod.GET)
@@ -94,19 +101,20 @@ public class SeckillController {
             return  new SeckillResult<>(true,execution);
         }catch (SeckillRepeatException e){
             SeckillExecution execution = new SeckillExecution(seckillId, SeckillStateEnmu.REPEAT);
-            return new SeckillResult<>(false,execution);
+            return new SeckillResult<>(true,execution);
         }catch (SeckillCloseException e){
             SeckillExecution execution = new SeckillExecution(seckillId,SeckillStateEnmu.END);
-            return new SeckillResult<>(false,execution);
+            return new SeckillResult<>(true,execution);
         }catch (Exception e){
             logger.error(e.getMessage(),e);
             SeckillExecution execution = new SeckillExecution(seckillId,SeckillStateEnmu.ERROR);
-            return new SeckillResult<>(false,execution);
+            return new SeckillResult<>(true,execution);
         }
 
     }
 
 
+    @ResponseBody
     @RequestMapping(value = "/time/now",method = RequestMethod.GET)
     public SeckillResult<Long> time(){
         Date now = new Date();
