@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 import org.xd.dao.SeckillDao;
 import org.xd.dao.SuccessKilledDao;
+import org.xd.dao.cache.RedisDao;
 import org.xd.dto.Exposer;
 import org.xd.dto.SeckillExecution;
 import org.xd.enmus.SeckillStateEnmu;
@@ -27,6 +28,9 @@ import java.util.List;
 public class SeckillServiceImpl implements SeckillService {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    @Resource
+    private RedisDao redisDao;
 
     @Resource
     private SeckillDao seckillDao;
@@ -50,12 +54,19 @@ public class SeckillServiceImpl implements SeckillService {
 
     @Override
     public Exposer exposeSeckillUrl(Long seckillId) {
-        Seckill seckill = seckillDao.queryById(seckillId);
+        Seckill seckill = redisDao.getSeckill(seckillId);
 
-        // 无此商品
+        // 1.get from cache
         if (seckill == null){
-            return new Exposer(false,seckillId);
+            // 2.get from database
+            seckill = seckillDao.queryById(seckillId);
+            if (seckill == null){
+                return new Exposer(false,seckillId);
+            }else {
+                redisDao.putSeckill(seckill);
+            }
         }
+
 
         Date startTime = seckill.getStartTime();
         Date endTime = seckill.getEndTime();
@@ -77,21 +88,29 @@ public class SeckillServiceImpl implements SeckillService {
             throw new SeckillException("seckill data rewrite");
         }
 
-        // 若发生异常 事物回滚
+
+
+        /*
+         * 先 insert 秒杀记录   (无锁)
+         * 再 update 库存      (有锁)
+         *
+         *  若发生异常 事物回滚
+         */
         try {
             Date now = new Date();
-            int updateCount = seckillDao.reduceNumber(seckillId,now);
+            int insertCount = successKilledDao.insertSuccessKilled(seckillId,phone);
 
-            // 无库存 或 时间结束
-            if (updateCount<=0){
-                throw new SeckillCloseException("seckill is closed");
+            // 重复插入
+            if (insertCount <= 0) {
+                throw new SeckillRepeatException("seckill repeated");
             }else {
-                int insertCount = successKilledDao.insertSuccessKilled(seckillId,phone);
+                int updateCount = seckillDao.reduceNumber(seckillId,now);
 
-                // 重复插入
-                if (insertCount <= 0) {
-                    throw new SeckillRepeatException("seckill repeated");
+                // 无库存 或 时间结束
+                if (updateCount<=0){
+                    throw new SeckillCloseException("seckill is closed");
                 }else {
+                    // 秒杀成功
                     SuccessKilled successKilled = successKilledDao.queryByIdWithSeckill(seckillId, phone);
                     return new SeckillExecution(seckillId, SeckillStateEnmu.SUCCESS,successKilled);
                 }
